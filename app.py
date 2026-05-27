@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, render_template
 from flask_sqlalchemy import SQLAlchemy
 import random
 import string
@@ -40,12 +40,7 @@ def generate_code(length=6):
 
 @app.route('/')
 def home():
-    return """
-    <form action="/shorten" method="POST">
-        <input name="long_url" placeholder="Enter URL">
-        <button type="submit">Shorten</button>
-    </form>
-    """
+    return render_template("home.html")
 
 @app.route("/shorten", methods=["POST"])
 def shorten():
@@ -79,22 +74,7 @@ def result(short_code):
     if not url:
         return "URL not found"
 
-    return f"""
-    <h3>Short URL Created</h3>
-    <p>
-        Original URL:
-        <br>
-        {url.long_url}
-    </p>
-    <p>
-        Short URL:
-        <br>
-        <a href="/{url.short_code}">
-            http://127.0.0.1:5000/{url.short_code}
-        </a>
-    </p>
-    <a href="/">Create another</a>
-    """
+    return render_template("result.html", url=url)
 
 @app.route("/<short_code>")
 def redirect_url(short_code):

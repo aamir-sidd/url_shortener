@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}URL Created - URL Shortener{% endblock %}
+
+{% block content %}
+    <h3>Short URL Created</h3>
+    <p>
+        <strong>Original URL:</strong><br>
+        {{ url.long_url }}
+    </p>
+    <p>
+        <strong>Short URL:</strong><br>
+        <a href="/{{ url.short_code }}">
+            http://127.0.0.1:5000/{{ url.short_code }}
+        </a>
+    </p>
+    <a href="/">Create another</a>
+{% endblock %}
