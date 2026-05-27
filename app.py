@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, render_template, flash, url_for
+from flask import Flask, request, redirect, render_template, flash, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import random
 import string
@@ -117,6 +117,70 @@ def delete_url(short_code):
     else:
         flash("URL not found!", "error")
     return redirect(url_for("home"))
+
+# ==========================================
+# REST API Endpoints
+# ==========================================
+
+@app.route("/api/shorten", methods=["POST"])
+def api_shorten():
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 400
+
+    data = request.get_json()
+    long_url = data.get("long_url")
+
+    if not long_url:
+        return jsonify({"error": "Missing long_url parameter"}), 400
+
+    long_url = long_url.strip()
+
+    # Normalization
+    if not (long_url.startswith("http://") or long_url.startswith("https://")):
+        long_url = "https://" + long_url
+
+    # Validation
+    if not is_valid_url(long_url):
+        return jsonify({"error": "Invalid URL"}), 400
+
+    # Generate a unique short code to prevent collisions
+    while True:
+        short_code = generate_code()
+        existing = URL.query.filter_by(short_code=short_code).first()
+        if not existing:
+            break
+
+    # Create object
+    new_url = URL(
+        short_code=short_code,
+        long_url=long_url
+    )
+    db.session.add(new_url)
+    db.session.commit()
+
+    return jsonify({
+        "short_code": short_code,
+        "short_url": f"http://127.0.0.1:5000/{short_code}",
+        "long_url": long_url
+    }), 201
+
+@app.route("/api/url/<short_code>", methods=["GET", "DELETE"])
+def api_url(short_code):
+    url = URL.query.filter_by(short_code=short_code).first()
+    if not url:
+        return jsonify({"error": "URL not found"}), 404
+
+    if request.method == "GET":
+        return jsonify({
+            "short_code": url.short_code,
+            "short_url": f"http://127.0.0.1:5000/{url.short_code}",
+            "long_url": url.long_url
+        }), 200
+
+    elif request.method == "DELETE":
+        db.session.delete(url)
+        db.session.commit()
+        return jsonify({"message": "URL deleted successfully"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
