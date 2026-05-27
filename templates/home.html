@@ -8,4 +8,34 @@
         <input name="long_url" placeholder="Enter URL" required>
         <button type="submit">Shorten</button>
     </form>
+
+    {% if urls %}
+        <div class="history-section">
+            <h2>History</h2>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Original URL</th>
+                        <th>Short Link</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for url in urls %}
+                        <tr>
+                            <td class="long-url-cell" title="{{ url.long_url }}">{{ url.long_url }}</td>
+                            <td>
+                                <a href="/{{ url.short_code }}" target="_blank">
+                                    http://127.0.0.1:5000/{{ url.short_code }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="/delete/{{ url.short_code }}" class="delete-btn">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
 {% endblock %}

@@ -106,3 +106,78 @@ h2, h3 {
 p {
     margin: 0 0 1rem 0;
 }
+
+/* Flash Messages */
+.flashes {
+    margin-bottom: 1.5rem;
+}
+
+.flash {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    border: 1px solid #111111;
+}
+
+.flash.success {
+    background-color: #f9f9f9;
+    color: #111111;
+    border-style: solid;
+}
+
+.flash.error {
+    background-color: #f9f9f9;
+    color: #111111;
+    border-style: dashed;
+}
+
+/* History Section */
+.history-section {
+    margin-top: 3rem;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.history-table th, .history-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.history-table th {
+    font-weight: 600;
+    border-bottom: 2px solid #111111;
+}
+
+.long-url-cell {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.delete-btn {
+    color: #666666;
+    text-decoration: none;
+    font-size: 0.8rem;
+    border: 1px solid #cccccc;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background-color: #ffffff;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.delete-btn:hover {
+    color: #ffffff;
+    background-color: #111111;
+    border-color: #111111;
+    text-decoration: none;
+}
+
+
