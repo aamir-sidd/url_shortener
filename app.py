@@ -49,9 +49,18 @@ def home():
 
 @app.route("/shorten", methods=["POST"])
 def shorten():
-    long_url = request.form["long_url"]
+    long_url = request.form["long_url"].strip()
 
-    short_code = generate_code()
+    # URL Validation / Normalization
+    if not (long_url.startswith("http://") or long_url.startswith("https://")):
+        long_url = "https://" + long_url
+
+    # Generate a unique short code to prevent collisions
+    while True:
+        short_code = generate_code()
+        existing = URL.query.filter_by(short_code=short_code).first()
+        if not existing:
+            break
 
     # Create object
     new_url = URL(
