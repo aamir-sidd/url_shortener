@@ -1,22 +1,38 @@
 from flask import Flask, request, redirect
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
 import random
 import string
 
 app = Flask(__name__)
 
-def init_db():
-    conn = sqlite3.connect("urls.db")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS urls (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                short_code TEXT UNIQUE,
-                long_url TEXT
-        )
-    """)
-    conn.close()
+# Database configuration
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///urls.db"
 
-init_db()
+db = SQLAlchemy(app)
+
+# Database model
+class URL(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    short_code = db.Column(
+        db.String(10),
+        unique=True,
+        nullable=False
+    )
+
+    long_url = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    # Explicit constructor to satisfy the IDE's type checker
+    def __init__(self, short_code, long_url):
+        self.short_code = short_code
+        self.long_url = long_url
+
+# Create tables
+with app.app_context():
+    db.create_all()
 
 def generate_code(length=6):
     characters = string.ascii_letters + string.digits
@@ -37,13 +53,14 @@ def shorten():
 
     short_code = generate_code()
 
-    conn = sqlite3.connect("urls.db")
-    conn.execute(
-        "INSERT INTO urls (short_code, long_url) VALUES (?, ?)",
-        (short_code, long_url)    
-        )
-    conn.commit()
-    conn.close()
+    # Create object
+    new_url = URL(
+        short_code=short_code,
+        long_url=long_url
+    )
+
+    db.session.add(new_url)
+    db.session.commit()
 
     return f"""
     Short URL: 
@@ -54,16 +71,13 @@ def shorten():
 
 @app.route("/<short_code>")
 def redirect_url(short_code):
-    conn = sqlite3.connect("urls.db")
-    cursor = conn.execute(
-        "SELECT long_url FROM urls WHERE short_code = ?",
-        (short_code,)
-    )
-    result = cursor.fetchone()
-    conn.close()
+    # Query database
+    url = URL.query.filter_by(
+        short_code=short_code
+    ).first()
 
-    if result:
-        return redirect(result[0])
+    if url:
+        return redirect(url.long_url)
 
     return "URL not found"
 
