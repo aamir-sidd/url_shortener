@@ -1,8 +1,26 @@
 from flask import Flask, request, redirect
+import sqlite3
+import random
+import string
 
 app = Flask(__name__)
 
-urls = {}
+def init_db():
+    conn = sqlite3.connect("urls.db")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS urls (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                short_code TEXT UNIQUE,
+                long_url TEXT
+        )
+    """)
+    conn.close()
+
+init_db()
+
+def generate_code(length=6):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
 
 @app.route('/')
 def home():
@@ -17,9 +35,15 @@ def home():
 def shorten():
     long_url = request.form["long_url"]
 
-    short_code = str(len(urls) + 1)
+    short_code = generate_code()
 
-    urls[short_code] = long_url
+    conn = sqlite3.connect("urls.db")
+    conn.execute(
+        "INSERT INTO urls (short_code, long_url) VALUES (?, ?)",
+        (short_code, long_url)    
+        )
+    conn.commit()
+    conn.close()
 
     return f"""
     Short URL: 
@@ -30,10 +54,16 @@ def shorten():
 
 @app.route("/<short_code>")
 def redirect_url(short_code):
-    long_url = urls.get(short_code)
+    conn = sqlite3.connect("urls.db")
+    cursor = conn.execute(
+        "SELECT long_url FROM urls WHERE short_code = ?",
+        (short_code,)
+    )
+    result = cursor.fetchone()
+    conn.close()
 
-    if long_url:
-        return redirect(long_url)
+    if result:
+        return redirect(result[0])
 
     return "URL not found"
 
