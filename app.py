@@ -62,11 +62,29 @@ def shorten():
     db.session.add(new_url)
     db.session.commit()
 
+    return redirect(f"/result/{short_code}")
+
+@app.route("/result/<short_code>")
+def result(short_code):
+    url = URL.query.filter_by(short_code=short_code).first()
+    if not url:
+        return "URL not found"
+
     return f"""
-    Short URL: 
-    <a href="/{short_code}">
-        http://localhost:5000/{short_code}
-    </a>
+    <h3>Short URL Created</h3>
+    <p>
+        Original URL:
+        <br>
+        {url.long_url}
+    </p>
+    <p>
+        Short URL:
+        <br>
+        <a href="/{url.short_code}">
+            http://127.0.0.1:5000/{url.short_code}
+        </a>
+    </p>
+    <a href="/">Create another</a>
     """
 
 @app.route("/<short_code>")

@@ -23,3 +23,5 @@ Thumbs.db
 *.db
 *.sqlite3
 
+# Flask instance folder (contains local database)
+instance/
