@@ -14,5 +14,13 @@
             http://127.0.0.1:5000/{{ url.short_code }}
         </a>
     </p>
+    <p>
+        <strong>Expires At:</strong><br>
+        {% if url.expires_at %}
+            {{ url.expires_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+        {% else %}
+            Never
+        {% endif %}
+    </p>
     <a href="/">Create another</a>
 {% endblock %}

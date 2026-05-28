@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import random
 import string
 import re
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = "url_shortener_dev_secret_key"
@@ -27,10 +28,21 @@ class URL(db.Model):
         nullable=False
     )
 
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    expires_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
     # Explicit constructor to satisfy the IDE's type checker
-    def __init__(self, short_code, long_url):
+    def __init__(self, short_code, long_url, expires_at=None):
         self.short_code = short_code
         self.long_url = long_url
+        self.expires_at = expires_at
 
 # Create tables
 with app.app_context():
@@ -68,6 +80,18 @@ def shorten():
         flash("Invalid URL! Please enter a valid web address.", "error")
         return redirect(url_for("home"))
 
+    # Calculate Expiration Time
+    expires_in = request.form.get("expires_in", "never")
+    expires_at = None
+    if expires_in == "1m":
+        expires_at = datetime.utcnow() + timedelta(minutes=1)
+    elif expires_in == "1h":
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+    elif expires_in == "1d":
+        expires_at = datetime.utcnow() + timedelta(days=1)
+    elif expires_in == "7d":
+        expires_at = datetime.utcnow() + timedelta(days=7)
+
     # Generate a unique short code to prevent collisions
     while True:
         short_code = generate_code()
@@ -78,7 +102,8 @@ def shorten():
     # Create object
     new_url = URL(
         short_code=short_code,
-        long_url=long_url
+        long_url=long_url,
+        expires_at=expires_at
     )
 
     db.session.add(new_url)
@@ -103,6 +128,9 @@ def redirect_url(short_code):
     ).first()
 
     if url:
+        # Check Expiration
+        if url.expires_at and datetime.utcnow() > url.expires_at:
+            return "This short link has expired.", 410
         return redirect(url.long_url)
 
     return "URL not found"
@@ -143,6 +171,15 @@ def api_shorten():
     if not is_valid_url(long_url):
         return jsonify({"error": "Invalid URL"}), 400
 
+    # Calculate Expiration Time
+    expires_in_minutes = data.get("expires_in_minutes")
+    expires_at = None
+    if expires_in_minutes is not None:
+        try:
+            expires_at = datetime.utcnow() + timedelta(minutes=int(expires_in_minutes))
+        except (ValueError, TypeError):
+            return jsonify({"error": "expires_in_minutes must be an integer"}), 400
+
     # Generate a unique short code to prevent collisions
     while True:
         short_code = generate_code()
@@ -153,7 +190,8 @@ def api_shorten():
     # Create object
     new_url = URL(
         short_code=short_code,
-        long_url=long_url
+        long_url=long_url,
+        expires_at=expires_at
     )
     db.session.add(new_url)
     db.session.commit()
@@ -161,7 +199,8 @@ def api_shorten():
     return jsonify({
         "short_code": short_code,
         "short_url": f"http://127.0.0.1:5000/{short_code}",
-        "long_url": long_url
+        "long_url": long_url,
+        "expires_at": expires_at.isoformat() if expires_at else None
     }), 201
 
 @app.route("/api/url/<short_code>", methods=["GET", "DELETE"])
@@ -171,10 +210,15 @@ def api_url(short_code):
         return jsonify({"error": "URL not found"}), 404
 
     if request.method == "GET":
+        # Check Expiration
+        if url.expires_at and datetime.utcnow() > url.expires_at:
+            return jsonify({"error": "URL has expired"}), 410
+
         return jsonify({
             "short_code": url.short_code,
             "short_url": f"http://127.0.0.1:5000/{url.short_code}",
-            "long_url": url.long_url
+            "long_url": url.long_url,
+            "expires_at": url.expires_at.isoformat() if url.expires_at else None
         }), 200
 
     elif request.method == "DELETE":
