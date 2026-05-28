@@ -3,7 +3,11 @@ from flask_sqlalchemy import SQLAlchemy
 import random
 import string
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from apscheduler.schedulers.background import BackgroundScheduler
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 app = Flask(__name__)
 app.secret_key = "url_shortener_dev_secret_key"
@@ -30,7 +34,7 @@ class URL(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=utc_now
     )
 
     expires_at = db.Column(
@@ -47,6 +51,21 @@ class URL(db.Model):
 # Create tables
 with app.app_context():
     db.create_all()
+
+# Background job to delete expired links
+def delete_expired_links():
+    with app.app_context():
+        now = utc_now()
+        expired_count = URL.query.filter(URL.expires_at < now).delete()
+        db.session.commit()
+        if expired_count > 0:
+            print(f"[Cleanup Worker] Deleted {expired_count} expired links at {now}.")
+
+# Initialize and start Scheduler
+scheduler = BackgroundScheduler()
+# Run every 30 seconds for quick testing feedback
+scheduler.add_job(func=delete_expired_links, trigger="interval", seconds=30)
+scheduler.start()
 
 def generate_code(length=6):
     characters = string.ascii_letters + string.digits
@@ -84,13 +103,17 @@ def shorten():
     expires_in = request.form.get("expires_in", "never")
     expires_at = None
     if expires_in == "1m":
-        expires_at = datetime.utcnow() + timedelta(minutes=1)
+        expires_at = utc_now() + timedelta(minutes=1)
+    elif expires_in == "2m":
+        expires_at = utc_now() + timedelta(minutes=2)
+    elif expires_in == "5m":
+        expires_at = utc_now() + timedelta(minutes=5)
     elif expires_in == "1h":
-        expires_at = datetime.utcnow() + timedelta(hours=1)
+        expires_at = utc_now() + timedelta(hours=1)
     elif expires_in == "1d":
-        expires_at = datetime.utcnow() + timedelta(days=1)
+        expires_at = utc_now() + timedelta(days=1)
     elif expires_in == "7d":
-        expires_at = datetime.utcnow() + timedelta(days=7)
+        expires_at = utc_now() + timedelta(days=7)
 
     # Generate a unique short code to prevent collisions
     while True:
@@ -129,7 +152,7 @@ def redirect_url(short_code):
 
     if url:
         # Check Expiration
-        if url.expires_at and datetime.utcnow() > url.expires_at:
+        if url.expires_at and utc_now() > url.expires_at:
             return "This short link has expired.", 410
         return redirect(url.long_url)
 
@@ -176,7 +199,7 @@ def api_shorten():
     expires_at = None
     if expires_in_minutes is not None:
         try:
-            expires_at = datetime.utcnow() + timedelta(minutes=int(expires_in_minutes))
+            expires_at = utc_now() + timedelta(minutes=int(expires_in_minutes))
         except (ValueError, TypeError):
             return jsonify({"error": "expires_in_minutes must be an integer"}), 400
 
@@ -211,7 +234,7 @@ def api_url(short_code):
 
     if request.method == "GET":
         # Check Expiration
-        if url.expires_at and datetime.utcnow() > url.expires_at:
+        if url.expires_at and utc_now() > url.expires_at:
             return jsonify({"error": "URL has expired"}), 410
 
         return jsonify({
