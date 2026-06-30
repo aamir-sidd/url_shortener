@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import random
 import string
 import re
+import json
 from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -84,7 +85,13 @@ def is_valid_url(url):
 @app.route('/')
 def home():
     urls = URL.query.all()
-    return render_template("home.html", urls=urls)
+    urls_dict = [{
+        "short_code": u.short_code,
+        "long_url": u.long_url,
+        "expires_at": u.expires_at.strftime('%Y-%m-%d %H:%M:%S') + ' UTC' if u.expires_at else 'Never'
+    } for u in urls]
+    urls_json = json.dumps(urls_dict)
+    return render_template("home.html", urls=urls, urls_json=urls_json)
 
 @app.route("/shorten", methods=["POST"])
 def shorten():

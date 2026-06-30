@@ -3,59 +3,61 @@
 {% block title %}Home - URL Shortener{% endblock %}
 
 {% block content %}
-    <h2>Shorten a URL</h2>
-    <form action="/shorten" method="POST">
-        <input name="long_url" placeholder="Enter URL" required>
-        
-        <label for="expires_in" style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">Link Expiry:</label>
-        <select name="expires_in" id="expires_in" style="width: 100%; padding: 0.5rem; border: 1px solid #cccccc; border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.95rem; background-color: #ffffff; color: #111111;">
-            <option value="never">Never Expires</option>
-            <option value="1m">1 Minute</option>
-            <option value="2m">2 Minutes</option>
-            <option value="5m">5 Minutes</option>
-            <option value="1h">1 Hour</option>
-            <option value="1d">1 Day</option>
-            <option value="7d">7 Days</option>
-        </select>
-        
-        <button type="submit">Shorten</button>
-    </form>
+<h2>Shorten a URL</h2>
+<form action="/shorten" method="POST">
+    <input name="long_url" placeholder="Enter URL" required>
 
-    {% if urls %}
-        <div class="history-section">
-            <h2>History</h2>
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Original URL</th>
-                        <th>Short Link</th>
-                        <th>Expires At</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for url in urls %}
-                        <tr>
-                            <td class="long-url-cell" title="{{ url.long_url }}">{{ url.long_url }}</td>
-                            <td>
-                                <a href="/{{ url.short_code }}" target="_blank">
-                                    http://127.0.0.1:5000/{{ url.short_code }}
-                                </a>
-                            </td>
-                            <td>
-                                {% if url.expires_at %}
-                                    {{ url.expires_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC
-                                {% else %}
-                                    Never
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="/delete/{{ url.short_code }}" class="delete-btn">Delete</a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
+    <label for="expires_in" style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">Link
+        Expiry:</label>
+    <select name="expires_in" id="expires_in"
+        style="width: 100%; padding: 0.5rem; border: 1px solid #cccccc; border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.95rem; background-color: #ffffff; color: #111111;">
+        <option value="never">Never Expires</option>
+        <option value="1m">1 Minute</option>
+        <option value="2m">2 Minutes</option>
+        <option value="5m">5 Minutes</option>
+        <option value="1h">1 Hour</option>
+        <option value="1d">1 Day</option>
+        <option value="7d">7 Days</option>
+    </select>
+
+    <button type="submit">Shorten</button>
+</form>
+
+{% if urls %}
+<div class="history-section">
+    <h2>History</h2>
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Original URL</th>
+                <th>Short Link</th>
+                <th>Expires At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for url in urls %}
+            <tr>
+                <td class="long-url-cell" title="{{ url.long_url }}">{{ url.long_url }}</td>
+                <td>
+                    <a href="/{{ url.short_code }}" target="_blank">
+                        http://127.0.0.1:5000/{{ url.short_code }}
+                    </a>
+                </td>
+                <td>
+                    {% if url.expires_at %}
+                    {{ url.expires_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+                    {% else %}
+                    Never
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/delete/{{ url.short_code }}" class="delete-btn">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}

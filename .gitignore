@@ -25,3 +25,7 @@ Thumbs.db
 
 # Flask instance folder (contains local database)
 instance/
+
+#files
+presentation_qna.md
+version-*.md
